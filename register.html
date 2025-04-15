@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация</title>
+</head>
+<body>
+<h2>Регистрация</h2>
+<form action="register.php" method="post">
+    <label>Имя:</label>
+    <input type="text" name="name" required><br>
+    <label>Email:</label>
+    <input type="email" name="email" required><br>
+    <label>Пароль:</label>
+    <input type="password" name="password" required><br>
+    <label for="gender">Пол:</label>
+    <select name="gender" id="gender" required>
+        <option value="М">Мужской</option>
+        <option value="Ж">Женский</option>
+    </select><br>
+    <button type="submit">Зарегистрироваться</button>
+</form>
+</body>
+</html>
