@@ -2,7 +2,6 @@
 session_start();
 require 'config.php';
 
-// Проверяем, что пользователь авторизован
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.html");
     exit();
@@ -10,11 +9,13 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Получаем все результаты пользователя
-$stmt = $pdo->prepare("SELECT r.id, t.test_name, r.result, r.status, r.date 
-                       FROM results r
-                       JOIN tests t ON r.test_id = t.id
-                       WHERE r.user_id = ?");
+$stmt = $pdo->prepare("
+    SELECT results.id AS result_id, tests.test_name, results.result, results.status, results.date 
+    FROM results 
+    JOIN tests ON results.test_id = tests.id 
+    WHERE results.user_id = ?
+    ORDER BY results.date DESC
+");
 $stmt->execute([$user_id]);
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -33,7 +34,7 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <th>Результат</th>
         <th>Статус</th>
         <th>Дата</th>
-        <th>Удалить</th>
+        <th>Действие</th>
     </tr>
     <?php foreach ($results as $result): ?>
         <tr>
@@ -42,14 +43,15 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <td><?= htmlspecialchars($result['status']) ?></td>
             <td><?= htmlspecialchars($result['date']) ?></td>
             <td>
-                <form action="delete_result.php" method="post">
-                    <input type="hidden" name="result_id" value="<?= $result['id'] ?>">
+                <form action="delete_result.php" method="post" onsubmit="return confirm('Удалить этот результат?');">
+                    <input type="hidden" name="result_id" value="<?= $result['result_id'] ?>">
                     <button type="submit">Удалить</button>
                 </form>
             </td>
         </tr>
     <?php endforeach; ?>
 </table>
+<br>
 <a href="profile.php">Назад</a>
 </body>
 </html>

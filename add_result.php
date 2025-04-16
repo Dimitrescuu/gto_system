@@ -2,69 +2,75 @@
 session_start();
 require 'config.php';
 
-// Проверяем, что пользователь авторизован
+// Проверка авторизации
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.html");
     exit();
 }
 
+$user_id = $_SESSION['user_id'];
+
+// Получаем пол пользователя
+$user_stmt = $pdo->prepare("SELECT gender FROM users WHERE id = ?");
+$user_stmt->execute([$user_id]);
+$user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+$gender = $user['gender'];
+
+// Получаем список испытаний по полу
+if ($gender == 'М') {
+    $test_stmt = $pdo->query("SELECT id, test_name FROM tests WHERE gender = 'М' OR gender = 'Все'");
+} else {
+    $test_stmt = $pdo->query("SELECT id, test_name FROM tests WHERE gender = 'Ж' OR gender = 'Все'");
+}
+$tests = $test_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Обработка добавления результата
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $user_id = $_SESSION['user_id'];
     $test_id = $_POST['test_id'];
     $result = $_POST['result'];
     $date = date("Y-m-d");
 
-    // Получаем информацию о тесте
-    $stmt = $pdo->prepare("SELECT norm, test_name FROM tests WHERE id = ?");
-    $stmt->execute([$test_id]);
-    $test = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Получаем информацию об испытании
+    $test_info_stmt = $pdo->prepare("SELECT norm, test_name FROM tests WHERE id = ?");
+    $test_info_stmt->execute([$test_id]);
+    $test = $test_info_stmt->fetch(PDO::FETCH_ASSOC);
 
     $norm = $test['norm'];
     $test_name = $test['test_name'];
 
-    // Логика для определения статуса в зависимости от теста
-    if (in_array($test_name, ['Бег на короткие дистанции — 30 метров', 'Бег на короткие дистанции — 60 метров',
-        'Бег на короткие дистанции — 100 метров', 'Бег на длинную дистанцию (более километра)',
-        'Челночный бег 3x10 м', 'Плавание 50 м'])) {
-        // Для беговых испытаний и плавания, если результат меньше нормы, то сдано
+    // Определяем статус: сдано или нет
+    $running_tests = [
+        'Бег на короткие дистанции — 30 метров',
+        'Бег на короткие дистанции — 60 метров',
+        'Бег на короткие дистанции — 100 метров',
+        'Бег на длинную дистанцию (более километра)',
+        'Челночный бег 3x10 м',
+        'Плавание 50 м'
+    ];
+
+    if (in_array($test_name, $running_tests)) {
+        // Время меньше нормы — успешно
         $status = ($result < $norm) ? 'сдано' : 'не сдано';
     } else {
-        // Для остальных испытаний, если результат больше нормы, то сдано
+        // Результат больше нормы — успешно
         $status = ($result > $norm) ? 'сдано' : 'не сдано';
     }
 
-    // Записываем результат в базу данных
-    $stmt = $pdo->prepare("INSERT INTO results (user_id, test_id, result, status, date) VALUES (?, ?, ?, ?, ?)");
-    if ($stmt->execute([$user_id, $test_id, $result, $status, $date])) {
-        echo "Результат добавлен!";
+    // Сохраняем результат
+    $insert_stmt = $pdo->prepare("INSERT INTO results (user_id, test_id, result, status, date) VALUES (?, ?, ?, ?, ?)");
+    if ($insert_stmt->execute([$user_id, $test_id, $result, $status, $date])) {
+        echo "Результат добавлен!<br><br>";
     } else {
-        echo "Ошибка записи результата.";
+        echo "Ошибка записи результата.<br><br>";
     }
 }
-
-// Получаем пол пользователя
-$stmt = $pdo->prepare("SELECT gender FROM users WHERE id = ?");
-$stmt->execute([$user_id]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-$gender = $user['gender'];  // Пол пользователя
-
-// Получаем испытания в зависимости от пола
-if ($gender == 'М') {
-    // Для мужчин
-    $stmt = $pdo->query("SELECT id, test_name FROM tests WHERE gender = 'М' OR gender = 'Все'");
-} else {
-    // Для женщин
-    $stmt = $pdo->query("SELECT id, test_name FROM tests WHERE gender = 'Ж' OR gender = 'Все'");
-}
-
-$tests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Добавить результат</title>
+    <title>Добавление результата</title>
 </head>
 <body>
 <h2>Добавить результат</h2>
@@ -74,13 +80,15 @@ $tests = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php foreach ($tests as $test): ?>
             <option value="<?= $test['id'] ?>"><?= htmlspecialchars($test['test_name']) ?></option>
         <?php endforeach; ?>
-    </select><br>
+    </select><br><br>
 
     <label>Результат:</label>
-    <input type="number" name="result" step="0.01" required><br>
+    <input type="number" name="result" step="0.01" required><br><br>
 
     <button type="submit">Сохранить</button>
 </form>
-<a href="profile.php">Назад</a>
+
+<br>
+<a href="profile.php">Назад в профиль</a>
 </body>
 </html>

@@ -28,5 +28,6 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 <p><a href="add_result.php">Добавить результат</a></p>
 <a href="logout.php">Выйти</a>
 
+
 </body>
 </html>

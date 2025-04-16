@@ -35,4 +35,3 @@ if (isset($_POST['result_id'])) {
 
 ?>
 <a href="my_results.php">Назад к результатам</a>
- 

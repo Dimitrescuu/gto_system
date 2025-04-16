@@ -2,7 +2,7 @@
 require 'config.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = trim($_POST['name']);
+    $name = trim($_POST['name']); // Используем name вместо username
     $email = trim($_POST['email']);
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
     $role = "спортсмен"; // По умолчанию
@@ -22,6 +22,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             echo "Ошибка при регистрации.";
         }
     }
-
 }
 ?>
